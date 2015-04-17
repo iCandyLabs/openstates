@@ -49,9 +49,11 @@ class LAEventScraper(EventScraper, LXMLMixin):
     _tz = pytz.timezone('America/Chicago')
 
     def scrape(self, chamber, session):
+        '''
         if chamber == 'lower':
             self.scrape_house_weekly_schedule(session)
 
+        '''
         self.scrape_committee_schedule(session, chamber)
 
     def scrape_committee_schedule(self, session, chamber):
@@ -157,6 +159,7 @@ class LAEventScraper(EventScraper, LXMLMixin):
                                    type='consideration')
         self.save_event(event)
 
+    '''
     def scrape_house_weekly_schedule(self, session):
         url = "http://house.louisiana.gov/H_Sched/Hse_Sched_Weekly.htm"
         page = self.lxmlize(url)
@@ -177,11 +180,12 @@ class LAEventScraper(EventScraper, LXMLMixin):
 
             if when_and_where.strip() == "":
                 continue
-
+            
             info = re.match(
                 r"(?P<when>.*) (?P<where>L|F|N|H|C.*-.*?)",
                 when_and_where
             ).groupdict()
+            
 
             when_and_where = info['when']
             location = info['where']
@@ -207,3 +211,4 @@ class LAEventScraper(EventScraper, LXMLMixin):
             event['link'] = guid
 
             self.save_event(event)
+    '''

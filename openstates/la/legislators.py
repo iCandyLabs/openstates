@@ -1,4 +1,4 @@
-import re
+import re, sys
 
 from billy.scrape.legislators import LegislatorScraper, Legislator
 from openstates.utils import LXMLMixin
@@ -62,12 +62,18 @@ class LALegislatorScraper(LegislatorScraper, LXMLMixin):
         email_index = info.index("E-mail Address") + 1
         email = info[email_index]
         assert "@" in email, "Email info is not valid: {}".format(email)
+        
+        photo_upper = page.xpath(".//img[contains(@src,'senate.legis.state.la.us')][@src]")        
+        photo_senator = photo_upper[0].attrib['src']
 
         leg = Legislator(term,
                          'upper',
                          district,
                          who,
-                         party=party)
+                         party=party,
+                         photo_url=photo_senator,
+                         email=email,
+                         url=url)
 
         leg.add_office('district',
                        'District Office',
@@ -125,6 +131,7 @@ class LALegislatorScraper(LegislatorScraper, LXMLMixin):
                          'lower',
                          leg_info['dist'],
                          leg_info['name'],
+                         email=leg_info['email'],
                          **kwargs)
 
         kwargs = {
