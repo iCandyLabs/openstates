@@ -46,7 +46,7 @@ class LACommitteeScraper(CommitteeScraper, BackoffScraper):
         page = lxml.html.fromstring(text)
 
         members = page.xpath('//table[@id="table38"]//font/a/b')
-
+                
         for link in members:
             role = "member"
             if link == members[0]:
@@ -56,10 +56,34 @@ class LACommitteeScraper(CommitteeScraper, BackoffScraper):
 
             name = link.xpath('string()')
             name = name.replace('Senator ', '').strip()
-
+            name = name.replace('  ', ' ')
+            
+            name = self.normalize_legislator_name(name)
             committee.add_member(name, role)
 
         self.save_committee(committee)
+    
+    def normalize_legislator_name(self, name):
+        leg_names = {
+            'Francis Thompson': 'Francis C. Thompson',
+            '"Jody" Amedee': 'Lee \"Jody\" Amedee',
+            'Rick Gallot': 'Richard \"Rick\" Gallot, Jr.',
+            'A.G. Crowe': 'A. G. Crowe',
+            'R.L. "Bret" Allain, II': 'R. L. Bret Allain, II',
+            'Jonathan "J.P." Perry': 'Jonathan W. Perry',
+            'Jean-Paul J. Morrell': 'Jean-Paul \"JP\" Morrell',
+            'David Heitmeier': 'David R. Heitmeier, O.D.',
+            'Dan "Blade" Morrish': 'Dan W. \"Blade\" Morrish',
+            'Robert W. "Bob" Kostelka': 'Robert W. Kostelka',
+            'Daniel "Danny" Martiny': 'Daniel R. Martiny',
+            'Page Cortez': 'Patrick Page Cortez',
+            'Gregory Tarver': 'Gregory W. Tarver, Sr.',
+            'Mike Walsworth': 'Michael A. Walsworth',
+            'Mack "Bodi" White': 'Mack A. \"Bodi\" White, Jr.',
+            'Ben Nevers': 'Ben W. Nevers',
+            'Gary Smith':  'Gary L. Smith, Jr.'
+        }
+        return leg_names[name] if name in leg_names else name
     
     def scrape_house(self):
         url = "http://house.louisiana.gov/H_Reps/H_Reps_CmtesFull.asp"
