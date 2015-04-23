@@ -49,11 +49,9 @@ class LAEventScraper(EventScraper, LXMLMixin):
     _tz = pytz.timezone('America/Chicago')
 
     def scrape(self, chamber, session):
-        '''
         if chamber == 'lower':
             self.scrape_house_weekly_schedule(session)
 
-        '''
         self.scrape_committee_schedule(session, chamber)
 
     def scrape_committee_schedule(self, session, chamber):
@@ -87,10 +85,43 @@ class LAEventScraper(EventScraper, LXMLMixin):
         time ,= page.xpath("//span[@id='lTime']/text()")
         location ,= page.xpath("//span[@id='lLocation']/text()")
 
+        homepageURL = "http://www.legis.la.gov/legis/Home.aspx"
+        homepage = self.get(homepageURL).text
+        homepage = lxml.html.fromstring(homepage)
+        homepage.make_links_absolute(homepageURL)
+        
+        timeUpper = homepage.xpath("//span[@id='ctl00_ctl00_PageBody_PageContent_labelSenateStatus']//nobr/text()")
+        timeUpper = [item.replace("Convenes at ","") for item in timeUpper]
+        timeUpper = [item.replace("Convened at ","") for item in timeUpper]
+        timeUpper = [item.replace("and is ","") for item in timeUpper]
+        timeNowUpper = datetime.datetime.now().strftime('%b %d, %Y %I:%M')
+        if any("Will convene on" in s for s in timeUpper):
+            timeUpper = timeNowUpper
+            print timeUpper
+                
+        timeLower = homepage.xpath("//span[@id='ctl00_ctl00_PageBody_PageContent_labelHouseStatus']//nobr/text()")
+        timeLower = [item.replace("Convenes at ","") for item in timeLower]
+        timeLower = [item.replace("Convened at ","") for item in timeLower]
+        timeLower = [item.replace(" and is ","") for item in timeLower]
+        timeNowLower = datetime.datetime.now().strftime('%b %d, %Y %I:%M')
+        if any("Will convene on" in s for s in timeLower):
+            timeLower = timeNowLower
+            print timeLower
+                
         if ("UPON ADJOURNMENT" in time.upper() or
                 "UPON  ADJOURNMENT" in time.upper()):
-            return
-
+            #when = "10:00 am"
+            when = ''.join(timeUpper)
+            time = when
+            #return
+        
+        if ("UPON ADJOURNMENT" in time.lower() or
+                "UPON  ADJOURNMENT" in time.lower()):
+            #when = "10:00 am"
+            when = ''.join(timeLower)
+            time = when
+            #return
+        
         substs = {
             "AM": ["A.M.", "a.m."],
             "PM": ["P.M.", "p.m."],
@@ -99,6 +130,10 @@ class LAEventScraper(EventScraper, LXMLMixin):
         for key, values in substs.items():
             for value in values:
                 time = time.replace(value, key)
+
+        # Make sure there's a space between the time's minutes and its AM/PM
+        if re.search(r'(?i)\d[AP]M$', time):
+            time = time[:-2] + " " + time[-2:]
 
         try:
             when = datetime.datetime.strptime("%s %s" % (
@@ -159,7 +194,6 @@ class LAEventScraper(EventScraper, LXMLMixin):
                                    type='consideration')
         self.save_event(event)
 
-    '''
     def scrape_house_weekly_schedule(self, session):
         url = "http://house.louisiana.gov/H_Sched/Hse_Sched_Weekly.htm"
         page = self.lxmlize(url)
@@ -180,12 +214,11 @@ class LAEventScraper(EventScraper, LXMLMixin):
 
             if when_and_where.strip() == "":
                 continue
-            
+
             info = re.match(
                 r"(?P<when>.*) (?P<where>L|F|N|H|C.*-.*?)",
                 when_and_where
             ).groupdict()
-            
 
             when_and_where = info['when']
             location = info['where']
@@ -211,4 +244,3 @@ class LAEventScraper(EventScraper, LXMLMixin):
             event['link'] = guid
 
             self.save_event(event)
-    '''
